@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Car, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 export const Navigation = () => {
   return (
@@ -7,9 +8,7 @@ export const Navigation = () => {
       <div className="container px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-accent rounded-lg flex items-center justify-center">
-              <Car className="h-6 w-6 text-accent-foreground" />
-            </div>
+            <img src={logo} alt="EI CAR'S Logo" className="w-10 h-10 rounded-lg object-cover" />
             <span className="text-2xl font-bold text-foreground">EI CAR'S</span>
           </div>
 
