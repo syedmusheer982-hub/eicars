@@ -1,0 +1,4 @@
+project_id = "qzowxjfwzzgjunwbwpol"
+
+[functions.car-assistant]
+verify_jwt = false
