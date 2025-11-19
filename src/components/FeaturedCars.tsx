@@ -1,7 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Fuel, Gauge } from "lucide-react";
+import { MapPin, Fuel, Gauge, Calendar, Phone, Mail } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useState } from "react";
 import car1 from "@/assets/car-1.jpg";
 import car2 from "@/assets/car-2.jpg";
 import car3 from "@/assets/car-3.jpg";
@@ -40,6 +42,8 @@ const cars = [
 ];
 
 export const FeaturedCars = () => {
+  const [selectedCar, setSelectedCar] = useState<typeof cars[0] | null>(null);
+
   return (
     <section className="py-20 bg-background">
       <div className="container px-6">
@@ -85,9 +89,85 @@ export const FeaturedCars = () => {
                   </div>
                 </div>
 
-                <Button className="w-full bg-primary hover:bg-primary/90">
-                  View Details
-                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button 
+                      className="w-full bg-primary hover:bg-primary/90"
+                      onClick={() => setSelectedCar(car)}
+                    >
+                      View Details
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl">{car.name}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-6">
+                      <div className="relative h-80 w-full overflow-hidden rounded-lg">
+                        <img 
+                          src={car.image} 
+                          alt={car.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <h3 className="text-xl font-semibold text-foreground">Car Details</h3>
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3 text-muted-foreground">
+                              <Calendar className="h-5 w-5" />
+                              <span>Year: {car.year}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-muted-foreground">
+                              <Gauge className="h-5 w-5" />
+                              <span>Mileage: {car.km}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-muted-foreground">
+                              <Fuel className="h-5 w-5" />
+                              <span>Fuel Type: {car.fuel}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-muted-foreground">
+                              <MapPin className="h-5 w-5" />
+                              <span>Location: {car.location}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <h3 className="text-xl font-semibold text-foreground">Pricing</h3>
+                          <div className="text-4xl font-bold text-accent">{car.price}</div>
+                          <p className="text-sm text-muted-foreground">
+                            Price negotiable. Contact seller for best deal.
+                          </p>
+                          
+                          <div className="pt-4 space-y-2">
+                            <Button className="w-full bg-primary hover:bg-primary/90" size="lg">
+                              <Phone className="h-4 w-4 mr-2" />
+                              Contact Seller
+                            </Button>
+                            <Button variant="outline" className="w-full" size="lg">
+                              <Mail className="h-4 w-4 mr-2" />
+                              Request Callback
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3 border-t pt-4">
+                        <h3 className="text-xl font-semibold text-foreground">Key Features</h3>
+                        <ul className="grid md:grid-cols-2 gap-2 text-muted-foreground">
+                          <li>✓ Verified & Certified</li>
+                          <li>✓ Complete Service History</li>
+                          <li>✓ Single Owner</li>
+                          <li>✓ Insurance Valid</li>
+                          <li>✓ No Accident History</li>
+                          <li>✓ RC Transfer Available</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </CardContent>
             </Card>
           ))}
