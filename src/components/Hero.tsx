@@ -1,10 +1,22 @@
 import { Button } from "@/components/ui/button";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, ExternalLink } from "lucide-react";
 import heroImage from "@/assets/hero-cars.jpg";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface HeroProps {
   onOpenChat: () => void;
 }
+
+const carPlatforms = [
+  { name: "Cars24", url: "https://www.cars24.com", logo: "🚗" },
+  { name: "CarWale", url: "https://www.carwale.com", logo: "🚙" },
+  { name: "Spinny", url: "https://www.spinny.com", logo: "🏎️" },
+];
 
 export const Hero = ({ onOpenChat }: HeroProps) => {
   return (
@@ -35,13 +47,36 @@ export const Hero = ({ onOpenChat }: HeroProps) => {
               <MessageSquare className="mr-2 h-5 w-5" />
               Ask AI Assistant
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              className="bg-background/10 backdrop-blur-sm border-2 border-primary-foreground/30 text-primary-foreground hover:bg-background/20 text-lg px-8 py-6 transition-smooth"
-            >
-              Browse Cars
-            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  className="bg-background/10 backdrop-blur-sm border-2 border-primary-foreground/30 text-primary-foreground hover:bg-background/20 text-lg px-8 py-6 transition-smooth"
+                >
+                  Browse Cars
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                {carPlatforms.map((platform) => (
+                  <DropdownMenuItem key={platform.name} asChild>
+                    <a 
+                      href={platform.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span>{platform.logo}</span>
+                        {platform.name}
+                      </span>
+                      <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                    </a>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <div className="mt-12 grid grid-cols-3 gap-8 max-w-xl">
