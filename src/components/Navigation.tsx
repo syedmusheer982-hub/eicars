@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, LogOut, User as UserIcon } from "lucide-react";
+import { Menu, LogOut, Plus } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +36,18 @@ export const Navigation = () => {
     navigate("/");
   };
 
+  const handlePostCar = () => {
+    if (user) {
+      navigate("/sell-car");
+    } else {
+      navigate("/auth");
+      toast({
+        title: "Login Required",
+        description: "Please login to post your car.",
+      });
+    }
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-b">
       <div className="container px-6 py-4">
@@ -45,23 +57,39 @@ export const Navigation = () => {
             <span className="text-2xl font-bold text-foreground">EI CAR'S</span>
           </div>
           
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-4">
             <a href="/#cars" className="text-foreground hover:text-accent transition-smooth">Buy</a>
+            
+            <Button 
+              onClick={handlePostCar}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Post Your Car
+            </Button>
+            
             {user ? (
-              <>
-                <Button variant="outline" onClick={() => navigate("/sell-car")}>Sell Your Car</Button>
-                <Button variant="ghost" size="icon" title="Logout" onClick={handleLogout}>
-                  <LogOut className="h-5 w-5" />
-                </Button>
-              </>
+              <Button variant="ghost" size="icon" title="Logout" onClick={handleLogout}>
+                <LogOut className="h-5 w-5" />
+              </Button>
             ) : (
               <Button variant="outline" onClick={() => navigate("/auth")}>Login</Button>
             )}
           </div>
 
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <Menu className="h-6 w-6" />
-          </Button>
+          <div className="flex md:hidden items-center gap-2">
+            <Button 
+              size="sm"
+              onClick={handlePostCar}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1"
+            >
+              <Plus className="h-4 w-4" />
+              Post
+            </Button>
+            <Button variant="ghost" size="icon">
+              <Menu className="h-6 w-6" />
+            </Button>
+          </div>
         </div>
       </div>
     </nav>
