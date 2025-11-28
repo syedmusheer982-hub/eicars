@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, LogOut, Plus } from "lucide-react";
+import { Menu, LogOut, Plus, Car } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,9 +69,19 @@ export const Navigation = () => {
             </Button>
             
             {user ? (
-              <Button variant="ghost" size="icon" title="Logout" onClick={handleLogout}>
-                <LogOut className="h-5 w-5" />
-              </Button>
+              <>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate("/my-listings")}
+                  className="gap-2"
+                >
+                  <Car className="h-4 w-4" />
+                  My Listings
+                </Button>
+                <Button variant="ghost" size="icon" title="Logout" onClick={handleLogout}>
+                  <LogOut className="h-5 w-5" />
+                </Button>
+              </>
             ) : (
               <Button variant="outline" onClick={() => navigate("/auth")}>Login</Button>
             )}
