@@ -6,6 +6,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { FloatingVoiceButton } from "@/components/FloatingVoiceButton";
+import { AIChat } from "@/components/AIChat";
 import { User } from "@supabase/supabase-js";
 import { Pencil, Trash2, Plus, Car, MapPin, Fuel, Calendar, Gauge } from "lucide-react";
 import {
@@ -61,8 +63,20 @@ const MyListings = () => {
   const [loading, setLoading] = useState(true);
   const [editingCar, setEditingCar] = useState<CarListing | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [startInVoiceMode, setStartInVoiceMode] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const openVoiceChat = () => {
+    setStartInVoiceMode(true);
+    setIsChatOpen(true);
+  };
+
+  const closeChat = () => {
+    setIsChatOpen(false);
+    setStartInVoiceMode(false);
+  };
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -505,6 +519,8 @@ const MyListings = () => {
           </DialogContent>
         </Dialog>
       </div>
+      <FloatingVoiceButton onClick={openVoiceChat} />
+      <AIChat isOpen={isChatOpen} onClose={closeChat} startInVoiceMode={startInVoiceMode} />
     </div>
   );
 };
