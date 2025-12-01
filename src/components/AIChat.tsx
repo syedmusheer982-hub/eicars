@@ -41,11 +41,29 @@ export const AIChat = ({ isOpen, onClose, startInVoiceMode = false }: AIChatProp
   }, []);
 
   const handleVoiceError = useCallback((error: string) => {
+    let description = "Voice recognition failed. Please try again.";
+    
+    switch (error) {
+      case "not-allowed":
+        description = "Please allow microphone access to use voice input.";
+        break;
+      case "network":
+        description = "Network error - speech recognition requires internet. Please type your message instead or try again.";
+        break;
+      case "no-speech":
+        description = "No speech detected. Please try speaking again.";
+        break;
+      case "audio-capture":
+        description = "No microphone found. Please check your device.";
+        break;
+      case "aborted":
+        // User stopped listening, no need to show error
+        return;
+    }
+    
     toast({
       title: "Voice Error",
-      description: error === "not-allowed" 
-        ? "Please allow microphone access to use voice input." 
-        : "Voice recognition failed. Please try again.",
+      description,
       variant: "destructive",
     });
   }, [toast]);
