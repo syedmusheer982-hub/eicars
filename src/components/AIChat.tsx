@@ -21,9 +21,10 @@ interface Message {
 interface AIChatProps {
   isOpen: boolean;
   onClose: () => void;
+  startInVoiceMode?: boolean;
 }
 
-export const AIChat = ({ isOpen, onClose }: AIChatProps) => {
+export const AIChat = ({ isOpen, onClose, startInVoiceMode = false }: AIChatProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -67,6 +68,17 @@ export const AIChat = ({ isOpen, onClose }: AIChatProps) => {
       window.speechSynthesis.getVoices();
     }
   }, []);
+
+  // Auto-start voice mode when opened with startInVoiceMode
+  useEffect(() => {
+    if (isOpen && startInVoiceMode && isVoiceSupported && !isListening) {
+      // Small delay to ensure component is fully mounted
+      const timer = setTimeout(() => {
+        startListening();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, startInVoiceMode, isVoiceSupported]);
 
   const sendMessage = async (messageText?: string) => {
     const textToSend = messageText || input.trim();

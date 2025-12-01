@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { FloatingVoiceButton } from "@/components/FloatingVoiceButton";
+import { AIChat } from "@/components/AIChat";
 import { User, Session } from "@supabase/supabase-js";
 import { z } from "zod";
 
@@ -26,8 +28,20 @@ const Auth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [startInVoiceMode, setStartInVoiceMode] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const openVoiceChat = () => {
+    setStartInVoiceMode(true);
+    setIsChatOpen(true);
+  };
+
+  const closeChat = () => {
+    setIsChatOpen(false);
+    setStartInVoiceMode(false);
+  };
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -238,6 +252,8 @@ const Auth = () => {
           </Tabs>
         </CardContent>
       </Card>
+      <FloatingVoiceButton onClick={openVoiceChat} />
+      <AIChat isOpen={isChatOpen} onClose={closeChat} startInVoiceMode={startInVoiceMode} />
     </div>
   );
 };
