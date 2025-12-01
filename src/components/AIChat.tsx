@@ -1,12 +1,13 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { X, Send, Bot, User, Mic, MicOff, Volume2, VolumeX, Languages } from "lucide-react";
+import { X, Send, Bot, User, Mic, MicOff, Volume2, VolumeX, Languages, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useVoiceRecognition, speakText } from "@/hooks/useVoiceRecognition";
+import { useWhisperRecognition } from "@/hooks/useWhisperRecognition";
 import {
   Tooltip,
   TooltipContent,
@@ -34,21 +35,40 @@ export const AIChat = ({ isOpen, onClose, startInVoiceMode = false }: AIChatProp
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeechEnabled, setIsSpeechEnabled] = useState(true);
+  const [useWhisper, setUseWhisper] = useState(false);
+  const [language, setLanguage] = useState<"en-IN" | "hi-IN">("en-IN");
+  const webSpeechFailedRef = useRef(false);
   const { toast } = useToast();
 
   const handleVoiceResult = useCallback((transcript: string) => {
     setInput(transcript);
   }, []);
 
+  const handleWhisperResult = useCallback((transcript: string) => {
+    setInput(transcript);
+    toast({
+      title: "Transcribed",
+      description: "Voice converted to text successfully",
+    });
+  }, [toast]);
+
   const handleVoiceError = useCallback((error: string) => {
+    // If network error, switch to Whisper
+    if (error === "network") {
+      webSpeechFailedRef.current = true;
+      setUseWhisper(true);
+      toast({
+        title: "Switching to Whisper",
+        description: "Using OpenAI Whisper for reliable voice recognition.",
+      });
+      return;
+    }
+
     let description = "Voice recognition failed. Please try again.";
     
     switch (error) {
       case "not-allowed":
         description = "Please allow microphone access to use voice input.";
-        break;
-      case "network":
-        description = "Network error - speech recognition requires internet. Please type your message instead or try again.";
         break;
       case "no-speech":
         description = "No speech detected. Please try speaking again.";
@@ -57,7 +77,6 @@ export const AIChat = ({ isOpen, onClose, startInVoiceMode = false }: AIChatProp
         description = "No microphone found. Please check your device.";
         break;
       case "aborted":
-        // User stopped listening, no need to show error
         return;
     }
     
@@ -68,17 +87,41 @@ export const AIChat = ({ isOpen, onClose, startInVoiceMode = false }: AIChatProp
     });
   }, [toast]);
 
+  const handleWhisperError = useCallback((error: string) => {
+    toast({
+      title: "Voice Error",
+      description: error,
+      variant: "destructive",
+    });
+  }, [toast]);
+
+  // Browser Speech Recognition
   const {
-    isListening,
+    isListening: isBrowserListening,
     isSupported: isVoiceSupported,
-    language,
-    startListening,
-    stopListening,
-    toggleLanguage,
+    startListening: startBrowserListening,
+    stopListening: stopBrowserListening,
+    setLanguage: setBrowserLanguage,
   } = useVoiceRecognition({
     onResult: handleVoiceResult,
     onError: handleVoiceError,
   });
+
+  // Whisper Recognition (fallback)
+  const {
+    isRecording: isWhisperRecording,
+    isProcessing: isWhisperProcessing,
+    startRecording: startWhisperRecording,
+    stopRecording: stopWhisperRecording,
+    isActive: isWhisperActive,
+  } = useWhisperRecognition({
+    onResult: handleWhisperResult,
+    onError: handleWhisperError,
+    language,
+  });
+
+  const isListening = useWhisper ? isWhisperRecording : isBrowserListening;
+  const isVoiceProcessing = isWhisperProcessing;
 
   // Load voices when component mounts
   useEffect(() => {
@@ -89,14 +132,27 @@ export const AIChat = ({ isOpen, onClose, startInVoiceMode = false }: AIChatProp
 
   // Auto-start voice mode when opened with startInVoiceMode
   useEffect(() => {
-    if (isOpen && startInVoiceMode && isVoiceSupported && !isListening) {
+    if (isOpen && startInVoiceMode && !isListening && !isWhisperActive) {
       // Small delay to ensure component is fully mounted
       const timer = setTimeout(() => {
-        startListening();
+        if (useWhisper || webSpeechFailedRef.current) {
+          startWhisperRecording();
+        } else if (isVoiceSupported) {
+          startBrowserListening();
+        }
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [isOpen, startInVoiceMode, isVoiceSupported]);
+  }, [isOpen, startInVoiceMode, isVoiceSupported, useWhisper]);
+
+  // Sync language with browser speech recognition
+  useEffect(() => {
+    setBrowserLanguage(language);
+  }, [language, setBrowserLanguage]);
+
+  const toggleLanguage = useCallback(() => {
+    setLanguage((prev) => (prev === "en-IN" ? "hi-IN" : "en-IN"));
+  }, []);
 
   const sendMessage = async (messageText?: string) => {
     const textToSend = messageText || input.trim();
@@ -146,14 +202,22 @@ export const AIChat = ({ isOpen, onClose, startInVoiceMode = false }: AIChatProp
   };
 
   const handleVoiceToggle = () => {
-    if (isListening) {
-      stopListening();
-      // Auto-send after stopping if there's input
-      if (input.trim()) {
-        setTimeout(() => sendMessage(), 100);
+    if (useWhisper) {
+      if (isWhisperRecording) {
+        stopWhisperRecording();
+      } else {
+        startWhisperRecording();
       }
     } else {
-      startListening();
+      if (isBrowserListening) {
+        stopBrowserListening();
+        // Auto-send after stopping if there's input
+        if (input.trim()) {
+          setTimeout(() => sendMessage(), 100);
+        }
+      } else {
+        startBrowserListening();
+      }
     }
   };
 
@@ -276,51 +340,67 @@ export const AIChat = ({ isOpen, onClose, startInVoiceMode = false }: AIChatProp
 
         <div className="p-4 border-t bg-secondary/30">
           {/* Voice status indicator */}
-          {isListening && (
+          {(isListening || isVoiceProcessing) && (
             <div className="flex items-center justify-center gap-2 mb-3 text-sm text-primary animate-pulse">
-              <div className="w-2 h-2 bg-primary rounded-full animate-ping" />
-              <span>
-                {language === "en-IN" ? "Listening..." : "सुन रहा हूं..."}
-              </span>
+              {isVoiceProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Processing audio...</span>
+                </>
+              ) : (
+                <>
+                  <div className="w-2 h-2 bg-primary rounded-full animate-ping" />
+                  <span>
+                    {language === "en-IN" ? "Listening..." : "सुन रहा हूं..."}
+                    {useWhisper && " (Whisper)"}
+                  </span>
+                </>
+              )}
             </div>
           )}
           
           <div className="flex gap-2">
-            {/* Voice Input Button */}
-            {isVoiceSupported && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={isListening ? "default" : "outline"}
-                    size="icon"
-                    onClick={handleVoiceToggle}
-                    disabled={isLoading}
-                    className={isListening ? "bg-primary animate-pulse" : ""}
-                  >
-                    {isListening ? (
-                      <MicOff className="h-4 w-4" />
-                    ) : (
-                      <Mic className="h-4 w-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{isListening ? "Stop listening" : `Speak in ${language === "en-IN" ? "English" : "Hindi"}`}</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
+            {/* Voice Input Button - Always show, Whisper is fallback */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={isListening ? "default" : "outline"}
+                  size="icon"
+                  onClick={handleVoiceToggle}
+                  disabled={isLoading || isVoiceProcessing}
+                  className={isListening ? "bg-primary animate-pulse" : ""}
+                >
+                  {isVoiceProcessing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isListening ? (
+                    <MicOff className="h-4 w-4" />
+                  ) : (
+                    <Mic className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>
+                  {isVoiceProcessing 
+                    ? "Processing..." 
+                    : isListening 
+                      ? "Stop listening" 
+                      : `Speak in ${language === "en-IN" ? "English" : "Hindi"}${useWhisper ? " (Whisper)" : ""}`}
+                </p>
+              </TooltipContent>
+            </Tooltip>
 
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={language === "en-IN" ? "Ask anything about cars..." : "कारों के बारे में कुछ भी पूछें..."}
-              disabled={isLoading || isListening}
+              disabled={isLoading || isListening || isVoiceProcessing}
               className="flex-1"
             />
             <Button
               onClick={() => sendMessage()}
-              disabled={!input.trim() || isLoading}
+              disabled={!input.trim() || isLoading || isVoiceProcessing}
               className="bg-accent hover:bg-accent/90"
             >
               <Send className="h-4 w-4" />
