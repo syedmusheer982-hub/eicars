@@ -7,17 +7,40 @@ interface UseWhisperRecognitionOptions {
   onResult: (transcript: string) => void;
   onError?: (error: string) => void;
   language?: Language;
+  silenceThreshold?: number; // dB threshold for silence detection
+  silenceDuration?: number; // ms of silence before auto-stop
 }
 
 export const useWhisperRecognition = ({
   onResult,
   onError,
   language = "en-IN",
+  silenceThreshold = -45,
+  silenceDuration = 1500,
 }: UseWhisperRecognitionOptions) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const silenceStartRef = useRef<number | null>(null);
+  const vadIntervalRef = useRef<number | null>(null);
+  const hasSpokenRef = useRef(false);
+
+  const stopVAD = useCallback(() => {
+    if (vadIntervalRef.current) {
+      clearInterval(vadIntervalRef.current);
+      vadIntervalRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    silenceStartRef.current = null;
+    hasSpokenRef.current = false;
+  }, []);
 
   const startRecording = useCallback(async () => {
     try {
@@ -29,6 +52,17 @@ export const useWhisperRecognition = ({
           noiseSuppression: true,
         },
       });
+
+      // Set up audio analysis for VAD
+      const audioContext = new AudioContext();
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(stream);
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.1;
+      source.connect(analyser);
+      
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
 
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: "audio/webm;codecs=opus",
@@ -44,6 +78,7 @@ export const useWhisperRecognition = ({
 
       mediaRecorder.onstop = async () => {
         setIsProcessing(true);
+        stopVAD();
         
         // Stop all tracks
         stream.getTracks().forEach((track) => track.stop());
@@ -89,18 +124,52 @@ export const useWhisperRecognition = ({
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start(100); // Collect data every 100ms
       setIsRecording(true);
+
+      // Start VAD monitoring
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      
+      vadIntervalRef.current = window.setInterval(() => {
+        if (!analyserRef.current) return;
+        
+        analyserRef.current.getByteFrequencyData(dataArray);
+        
+        // Calculate average volume in dB
+        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+        const volumeDb = average > 0 ? 20 * Math.log10(average / 255) : -100;
+        
+        const now = Date.now();
+        
+        if (volumeDb > silenceThreshold) {
+          // User is speaking
+          hasSpokenRef.current = true;
+          silenceStartRef.current = null;
+        } else if (hasSpokenRef.current) {
+          // Silence detected after speech
+          if (!silenceStartRef.current) {
+            silenceStartRef.current = now;
+          } else if (now - silenceStartRef.current > silenceDuration) {
+            // Auto-stop after silence duration
+            if (mediaRecorderRef.current?.state === "recording") {
+              mediaRecorderRef.current.stop();
+              setIsRecording(false);
+            }
+          }
+        }
+      }, 100);
+
     } catch (err) {
       console.error("Microphone access error:", err);
       onError?.("Could not access microphone. Please check permissions.");
     }
-  }, [language, onResult, onError]);
+  }, [language, onResult, onError, silenceThreshold, silenceDuration, stopVAD]);
 
   const stopRecording = useCallback(() => {
+    stopVAD();
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
-  }, [isRecording]);
+  }, [isRecording, stopVAD]);
 
   return {
     isRecording,
