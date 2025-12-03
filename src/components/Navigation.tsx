@@ -1,17 +1,19 @@
 import { Button } from "@/components/ui/button";
-import { Menu, LogOut, Plus, Car } from "lucide-react";
+import { Menu, LogOut, Plus, Car, ShieldAlert } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { User, Session } from "@supabase/supabase-js";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 export const Navigation = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin } = useAdminCheck();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -70,6 +72,16 @@ export const Navigation = () => {
             
             {user ? (
               <>
+                {isAdmin && (
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => navigate("/admin")}
+                    className="gap-2 text-primary"
+                  >
+                    <ShieldAlert className="h-4 w-4" />
+                    Admin
+                  </Button>
+                )}
                 <Button 
                   variant="ghost" 
                   onClick={() => navigate("/my-listings")}
