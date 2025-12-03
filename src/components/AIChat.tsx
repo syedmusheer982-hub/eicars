@@ -34,8 +34,14 @@ export const AIChat = ({ isOpen, onClose, startInVoiceMode = false }: AIChatProp
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isSpeechEnabled, setIsSpeechEnabled] = useState(true);
-  const [useWhisper, setUseWhisper] = useState(false);
+  const [isSpeechEnabled, setIsSpeechEnabled] = useState(() => {
+    const saved = localStorage.getItem("speechEnabled");
+    return saved !== null ? saved === "true" : true;
+  });
+  const [useWhisper, setUseWhisper] = useState(() => {
+    const saved = localStorage.getItem("useWhisper");
+    return saved === "true";
+  });
   const [language, setLanguage] = useState<"en-IN" | "hi-IN">("en-IN");
   const webSpeechFailedRef = useRef(false);
   const { toast } = useToast();
@@ -129,6 +135,15 @@ export const AIChat = ({ isOpen, onClose, startInVoiceMode = false }: AIChatProp
       window.speechSynthesis.getVoices();
     }
   }, []);
+
+  // Persist speech preferences to localStorage
+  useEffect(() => {
+    localStorage.setItem("speechEnabled", String(isSpeechEnabled));
+  }, [isSpeechEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem("useWhisper", String(useWhisper));
+  }, [useWhisper]);
 
   // Auto-start voice mode when opened with startInVoiceMode
   useEffect(() => {
