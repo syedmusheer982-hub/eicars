@@ -257,6 +257,24 @@ export const AIChat = ({ isOpen, onClose, startInVoiceMode = false }: AIChatProp
               </TooltipContent>
             </Tooltip>
 
+            {/* Whisper Toggle */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setUseWhisper(!useWhisper)}
+                  className={`text-primary-foreground hover:bg-primary-foreground/20 gap-1 text-xs font-semibold ${useWhisper ? "bg-primary-foreground/20" : ""}`}
+                >
+                  <Mic className="h-4 w-4" />
+                  {useWhisper ? "Whisper" : "Browser"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{useWhisper ? "Using OpenAI Whisper (reliable)" : "Using browser speech (fast)"}</p>
+              </TooltipContent>
+            </Tooltip>
+
             {/* Speech Toggle */}
             <Tooltip>
               <TooltipTrigger asChild>
