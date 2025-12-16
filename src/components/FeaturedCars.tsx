@@ -25,14 +25,8 @@ interface Car {
   phone?: string;
 }
 
-const sampleCars = [
-  { id: "1", name: "Honda City VX", brand: "Honda", model: "City VX", price: 1250000, year: "2022", km: "15,000 km", fuel: "Petrol", location: "Mumbai, Maharashtra", image_url: car1 },
-  { id: "2", name: "Hyundai Creta SX", brand: "Hyundai", model: "Creta SX", price: 1675000, year: "2023", km: "8,500 km", fuel: "Diesel", location: "Bangalore, Karnataka", image_url: car2 },
-  { id: "3", name: "Maruti Swift ZXI", brand: "Maruti", model: "Swift ZXI", price: 725000, year: "2021", km: "22,000 km", fuel: "Petrol", location: "Delhi, NCR", image_url: car3 },
-];
-
 export const FeaturedCars = () => {
-  const [cars, setCars] = useState<Car[]>(sampleCars);
+  const [cars, setCars] = useState<Car[]>([]);
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
   const { toast } = useToast();
 
@@ -51,9 +45,7 @@ export const FeaturedCars = () => {
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        setCars(data as Car[]);
-      }
+      setCars(data as Car[] || []);
     } catch (error: any) {
       console.error("Error fetching cars:", error);
     }
@@ -77,8 +69,14 @@ export const FeaturedCars = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {cars.map((car) => (
+        {cars.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-xl text-muted-foreground">No cars available at the moment.</p>
+            <p className="text-muted-foreground mt-2">Check back soon for new listings!</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {cars.map((car) => (
             <Card 
               key={car.id}
               className="overflow-hidden hover:shadow-elegant transition-smooth hover:-translate-y-2 border-2"
@@ -210,7 +208,8 @@ export const FeaturedCars = () => {
               </CardContent>
             </Card>
           ))}
-        </div>
+          </div>
+        )}
 
         <div className="text-center mt-12">
           <Button size="lg" variant="outline" className="border-2">
