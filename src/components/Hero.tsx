@@ -1,6 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { MessageSquare, ExternalLink } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import heroImage from "@/assets/hero-cars.jpg";
+import car1 from "@/assets/car-1.jpg";
+import car2 from "@/assets/car-2.jpg";
+import car3 from "@/assets/car-3.jpg";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,14 +22,83 @@ const carPlatforms = [
   { name: "Spinny", url: "https://www.spinny.com", logo: "🏎️" },
 ];
 
+const heroSlides = [heroImage, car1, car2, car3];
+
 export const Hero = ({ onOpenChat }: HeroProps) => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [mouseX, setMouseX] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      setMouseX(x);
+      
+      // Change slide based on mouse position (divide screen into sections)
+      const slideIndex = Math.min(Math.floor(x * heroSlides.length), heroSlides.length - 1);
+      setCurrentSlide(slideIndex);
+    };
+
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('mousemove', handleMouseMove);
+    }
+
+    return () => {
+      if (container) {
+        container.removeEventListener('mousemove', handleMouseMove);
+      }
+    };
+  }, []);
+
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+    <section 
+      ref={containerRef}
+      className="relative min-h-[90vh] flex items-center justify-center overflow-hidden cursor-none"
+    >
+      {/* Slide indicators */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+        {heroSlides.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentSlide(index)}
+            className={`w-3 h-3 rounded-full transition-all duration-300 ${
+              currentSlide === index 
+                ? 'bg-accent w-8' 
+                : 'bg-primary-foreground/50 hover:bg-primary-foreground/70'
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Background slides */}
+      {heroSlides.map((slide, index) => (
+        <div 
+          key={index}
+          className="absolute inset-0 bg-cover bg-center z-0 transition-all duration-700 ease-out"
+          style={{ 
+            backgroundImage: `url(${slide})`,
+            opacity: currentSlide === index ? 1 : 0,
+            transform: `scale(${currentSlide === index ? 1.05 : 1}) translateX(${(mouseX - 0.5) * -20}px)`,
+          }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/80 to-primary/60" />
+        </div>
+      ))}
+
+      {/* Mouse follower indicator */}
       <div 
-        className="absolute inset-0 bg-cover bg-center z-0"
-        style={{ backgroundImage: `url(${heroImage})` }}
+        className="absolute top-1/2 z-20 pointer-events-none transition-all duration-100"
+        style={{ 
+          left: `${mouseX * 100}%`,
+          transform: 'translate(-50%, -50%)'
+        }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/80 to-primary/60" />
+        <div className="w-16 h-16 rounded-full border-2 border-accent/50 flex items-center justify-center backdrop-blur-sm bg-background/10">
+          <span className="text-accent text-xs font-semibold">SLIDE</span>
+        </div>
       </div>
       
       <div className="container relative z-10 px-6">
