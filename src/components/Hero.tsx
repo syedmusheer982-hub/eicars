@@ -84,7 +84,7 @@ export const Hero = ({ onOpenChat }: HeroProps) => {
             transform: `scale(${currentSlide === index ? 1.05 : 1}) translateX(${(mouseX - 0.5) * -20}px)`,
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/80 to-primary/60" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-emerald-950/85 to-emerald-900/70" />
         </div>
       ))}
 
