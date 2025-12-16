@@ -88,18 +88,6 @@ export const Hero = ({ onOpenChat }: HeroProps) => {
         </div>
       ))}
 
-      {/* Mouse follower indicator */}
-      <div 
-        className="absolute top-1/2 z-20 pointer-events-none transition-all duration-100"
-        style={{ 
-          left: `${mouseX * 100}%`,
-          transform: 'translate(-50%, -50%)'
-        }}
-      >
-        <div className="w-16 h-16 rounded-full border-2 border-accent/50 flex items-center justify-center backdrop-blur-sm bg-background/10">
-          <span className="text-accent text-xs font-semibold">SLIDE</span>
-        </div>
-      </div>
       
       <div className="container relative z-10 px-6">
         <div className="max-w-3xl">
